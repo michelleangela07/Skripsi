@@ -1,16 +1,13 @@
-import streamlit as st
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, silhouette_samples
 import matplotlib.pyplot as plt
 import numpy as np
+import folium
+from streamlit_folium import folium_static
+import streamlit as st
 import plotly.express as px
 import io
-import folium
-
-# Sidebar
-st.sidebar.title("Menu Navigasi")
-menu_select = st.sidebar.radio("Menuju ke", ('Halaman Utama', 'Dataset', 'Eksperimen', 'About'))
 
 # Function to load data
 def load_data(file):
@@ -35,6 +32,64 @@ def dataset(df, file_name):
         key=f"download_button_{file_name}"
     )
 
+def generate_map():
+    # Membuat peta Pulau Jawa menggunakan folium
+    m = folium.Map(location=[-7.6145, 110.7121], zoom_start=7, width=800, height=600)
+    #m = folium.Map(location=[-7.6145, 110.7121], zoom_start=7)
+
+    # Menambahkan marker untuk setiap kota dalam cluster 1 (biru)
+    cluster_1 = [
+        ("Bandung", -6.9147, 107.6098),
+        ("Banyumas", -7.5155, 109.2947),
+        ("Bekasi", -6.2348, 106.9945),
+        ("Blitar", -8.0984, 112.1684),
+        ("Bogor", -6.5944, 106.7892),
+        ("Cilacap", -7.7188, 109.0159),
+        ("Cirebon", -6.7053, 108.5554),
+        ("Depok", -6.4025, 106.7942),
+        ("Jember", -8.1724, 113.699),
+        ("Kediri", -7.8166, 112.0111),
+        ("Madiun", -7.6298, 111.5237),
+        ("Malang", -7.9666, 112.6326),
+        ("Solo", -7.5561, 110.8316),
+        ("Sukabumi", -6.9294, 106.9294),
+        ("Surabaya", -7.2575, 112.7521),
+        ("Surakarta", -7.571, 110.8258)
+    ]
+
+    for city, lat, lon in cluster_1:
+        popup_content = f"{city}<br>Cluster: 1"
+        folium.Marker(location=[lat, lon], popup=popup_content, icon=folium.Icon(color='blue')).add_to(m)
+
+    # Menambahkan marker untuk setiap kota dalam cluster 2 (merah)
+    cluster_2 = [
+        ("Jakarta Pusat", -6.2088, 106.8456),
+        ("Semarang", -7.0051, 110.4381),
+        ("Serang", -6.1091, 106.1504),
+        ("Tangerang", -6.178, 106.63),
+        ("Yogyakarta", -7.7956, 110.3695)
+    ]
+
+    for city, lat, lon in cluster_2:
+        popup_content = f"{city}<br>Cluster: 2"
+        folium.Marker(location=[lat, lon], popup=popup_content, icon=folium.Icon(color='red')).add_to(m)
+
+    # Menambahkan marker untuk setiap kota dalam cluster 3 (hijau)
+    cluster_3 = [
+        ("Tasikmalaya", -7.3276, 108.2208),
+        ("Tegal", -6.8694, 109.1402)
+    ]
+
+    for city, lat, lon in cluster_3:
+        popup_content = f"{city}<br>Cluster: 3"
+        folium.Marker(location=[lat, lon], popup=popup_content, icon=folium.Icon(color='green')).add_to(m)
+
+    return m
+
+# Sidebar
+st.sidebar.title("Menu Navigasi")
+menu_select = st.sidebar.radio("Menuju ke", ('Halaman Utama', 'Dataset', 'Eksperimen', 'About'))
+
 #Halaman Utama
 if menu_select == 'Halaman Utama':
     st.title("Clustering Harga Pangan Pasar Modern Pulau Jawa")
@@ -51,14 +106,17 @@ if menu_select == 'Halaman Utama':
 
     st.header("Peta Cluster di Pulau Jawa")
 
-    image_path = "peta.png"
-    st.image(image_path, use_column_width=True)
+    # Memanggil fungsi untuk membuat peta dan menampilkannya menggunakan folium_static
+    folium_static(generate_map())
 
     st.header("Hasil Percobaan")
     st.write("Parameter yang digunakan adalah beras, telur ayam, daging ayam, daging sapi, bawang merah, bawang putih, cabai merah keriting, cabai rawit hijau, cabai rawit merah, minyak goreng, dan gula pasir.")
 
     # Path menuju folder gambar
     image_folder_path = "img"
+
+    # Menentukan teks subheader sesuai pilihan pengguna
+    #st.subheader(f"Pola Data Tren {trend_choices} untuk {parameter_choices}")
 
     # Dropdown untuk memilih cluster
     selected_cluster = st.selectbox("Silahkan Pilih Cluster atau Perbandingan", ["Cluster 1", "Cluster 2", "Cluster 3", "Perbandingan"])
@@ -146,6 +204,9 @@ elif menu_select == 'Eksperimen':
                                       facecolor=color, edgecolor=color, alpha=0.7)
                     ax.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
                     y_lower = y_upper + 10
+                #ax.set_title("Silhouette Plot")
+                #ax.set_xlabel("Silhouette Coefficient Values")
+                #ax.set_ylabel("Cluster Label")
                 ax.axvline(x=silhouette_avg, color="red", linestyle="--")
                 ax.set_yticks([])
                 ax.set_xticks([-0.1, 0, 0.2, 0.4, 0.6, 0.8, 1])
@@ -154,6 +215,13 @@ elif menu_select == 'Eksperimen':
 
                 # Menampilkan nilai rata-rata silhouette
                 st.write(f"Nilai rata-rata silhouette: {silhouette_avg}")
+
+            ## Menampilkan visualisasi cluster
+            #if show_cluster_visualization:
+                #st.header("Visualisasi Cluster")
+                #fig = px.scatter(dft, x=dft.columns[0], y=dft.columns[1], color='Cluster', hover_name=dft.index,
+                          #color_continuous_scale=['blue', 'red'])
+                #st.plotly_chart(fig)
 
             # Menampilkan scatter plot
             if show_scatter_plot:
@@ -189,6 +257,7 @@ elif menu_select == 'Dataset':
 #About
 elif menu_select == 'About':
     st.title("About")
+    #st.write("Welcome to the About Page!")
 
     st.header("Tentang Program")
     st.write("Ini merupakan sebuah program yang dirancang untuk memenuhi tugas akhir saya sebagai mahasiswa tingkat akhir yang saat ini sedang berkuliah di Universitas Tarumanagara jurusan Teknik Informatika angkatan 2020. Topik tugas akhir yang saya ambil adalah Clustering Harga Pangan di Pasar Modern Pulau Jawa Menggunakan K-Means. Program ini juga dibuat dengan tujuan untuk memberikan informasi seputar harga pangan kepada masyarakat di Pulau Jawa.")
@@ -206,6 +275,10 @@ elif menu_select == 'About':
 
     st.header("Tentang Perancang")
     st.write("Di bawah ini merupakan identitas diri saya selaku perancang program ini.")
+    ## Path menuju gambar lokal
+    #image_path = "profilMichelle.jpg"
+    ## Tampilkan gambar
+    #st.image(image_path, width=200)
     st.write("<b>Nama Lengkap:</b> Michelle Angela Thena", unsafe_allow_html=True)
     st.write("<b>Universitas Asal:</b> Universitas Tarumanagara", unsafe_allow_html=True)
     st.write("<b>NIM:</b> 535200020", unsafe_allow_html=True)
